@@ -11,16 +11,16 @@ import requests
 from flask import Flask
 
 # ================= تنظیمات اختصاصی ربات =================
-BOT_TOKEN = "8659065494:AAHdEetxaorQwURQSgLoFOW20NtIEP3LrRo" # توکن خود را اینجا قرار دهید
+BOT_TOKEN = "8659065494:AAHdEetxaorQwURQSgLoFOW20NtIEP3LrRo" # توکن ربات خود را اینجا وارد کنید
 ADMIN_ID = 8516792883
 CHANNEL_ID = "@MediaRena"
 DEV_USERNAME = "irezafattahi"
 BOT_USERNAME = "MediaRenaBot"
 
 # اطلاعات حمایت مالی (برای بخش دونیت)
-DONATE_CARD = "۶۰۳۷-۹۹۹۹-۹۹۹۹-۹۹۹۹"
-DONATE_NAME = "علیرضا فتاحی"
-DONATE_CRYPTO = "TX... (TRC20)"
+DONATE_CARD = "6219-8618-2123-2567"
+DONATE_NAME = "رضا فتاحی"
+DONATE_CRYPTO = "USDT ( TRC-20 ) TQ3FbpDYiKxf8aZtKuxBiWaj9N7LQnQY4F "
 
 bot = telebot.TeleBot(BOT_TOKEN)
 users = set()
@@ -216,7 +216,7 @@ def callback_query(call):
             bot.answer_callback_query(call.id, "❌ این درخواست منقضی شده است. لطفا لینک را دوباره بفرستید.", show_alert=True)
             return
             
-        bot.edit_message_text("⏳ **در حال دور زدن محدودیت‌ها و استخراج فایل...** لطفاً صبور باشید.", chat_id, call.message.message_id, parse_mode="Markdown")
+        bot.edit_message_text("⏳ **در حال استخراج فایل با استفاده از کوکی...** لطفاً صبور باشید.", chat_id, call.message.message_id, parse_mode="Markdown")
         del pending_downloads[dl_id]
         
         threading.Thread(target=core_downloader, args=(call.message, url, action, dl_id)).start()
@@ -273,7 +273,7 @@ def core_downloader(message, url, action, dl_id):
         'noplaylist': True,
         'quiet': False,
         'logger': YTDLLogger(bot, chat_id, msg_id),
-        # ترفند دور زدن ارور تایید هویت یوتیوب (جا زدن به عنوان گوشی اندروید)
+        'cookiefile': 'cookies.txt', # اتصال مستقیم کوکی برای دور زدن محدودیت یوتیوب
         'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
         'http_headers': {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
     }
@@ -336,5 +336,5 @@ def core_downloader(message, url, action, dl_id):
                 pass
 
 if __name__ == '__main__':
-    print("MediaRenaBot is running with Bot Detection Bypass & Advanced Menus!")
+    print("MediaRenaBot is running with Cookies & Advanced Menus!")
     bot.infinity_polling()
