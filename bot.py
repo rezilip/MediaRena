@@ -11,26 +11,26 @@ import requests
 from flask import Flask
 
 # ================= تنظیمات اختصاصی ربات =================
-BOT_TOKEN = "8659065494:AAGwn_rVeYpxr4LIHXIHuH36ZK2PoaVJ1Kg"
+BOT_TOKEN = "8659065494:AAF4OUnmTKdQ5y2NTayMtCPkhgHR5kG55rg"
 ADMIN_ID = 8516792883
 CHANNEL_ID = "@MediaRena"
 DEV_USERNAME = "irezafattahi"
 BOT_USERNAME = "MediaRenaBot"
 
-DONATE_CARD = "۶۰۳۷-۹۹۹۹-۹۹۹۹-۹۹۹۹"
-DONATE_NAME = "علیرضا فتاحی"
-DONATE_CRYPTO = "TX... (TRC20)"
+DONATE_CARD = "6219-8618-2123-2567"
+DONATE_NAME = "رضا فتاحی"
+DONATE_CRYPTO = "USDT (TRC20): TQ3FbpDYiKxf8aZtKuxBiWaj9N7LQnQY4F "
 
 bot = telebot.TeleBot(BOT_TOKEN)
 users = set()
 banned_users = set()
 pending_downloads = {}
 
-# ================= سرور وب =================
+# ================= سرور وب (برای رندر) =================
 app = Flask(__name__)
 @app.route('/')
 def home():
-    return "MediaRenaBot is running smoothly! 🚀"
+    return "MediaRenaBot is finally running perfectly! 🚀"
 
 def run_web_server():
     port = int(os.environ.get("PORT", 8080))
@@ -38,7 +38,7 @@ def run_web_server():
 
 threading.Thread(target=run_web_server, daemon=True).start()
 
-# ================= کیبوردها =================
+# ================= کیبوردهای ساده و هوشمند =================
 def main_menu_keyboard():
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(InlineKeyboardButton("📥 دانلود مدیا (ارسال لینک)", callback_data="download_section"))
@@ -62,11 +62,10 @@ def join_markup():
 
 def quality_keyboard(dl_id):
     markup = InlineKeyboardMarkup()
-    markup.row(InlineKeyboardButton("🎞 360p", callback_data=f"dl_{dl_id}_360"),
-               InlineKeyboardButton("📺 720p (HD)", callback_data=f"dl_{dl_id}_720"))
-    markup.row(InlineKeyboardButton("💻 1080p (FHD)", callback_data=f"dl_{dl_id}_1080"),
-               InlineKeyboardButton("⚡ بهینه (Auto)", callback_data=f"dl_{dl_id}_best"))
-    markup.row(InlineKeyboardButton("🎵 دانلود صوت (MP3)", callback_data=f"dl_{dl_id}_mp3"))
+    markup.row(InlineKeyboardButton("🔻 کیفیت پایین (حجم کم)", callback_data=f"dl_{dl_id}_low"))
+    markup.row(InlineKeyboardButton("🌟 کیفیت عالی (حداکثر)", callback_data=f"dl_{dl_id}_high"))
+    markup.row(InlineKeyboardButton("⚡ کیفیت بهینه (پیشنهادی)", callback_data=f"dl_{dl_id}_optimal"))
+    markup.row(InlineKeyboardButton("🎵 فقط صوت (MP3)", callback_data=f"dl_{dl_id}_mp3"))
     markup.row(InlineKeyboardButton("❌ لغو عملیات", callback_data="cancel"))
     return markup
 
@@ -228,22 +227,21 @@ def core_downloader(message, url, action, dl_id):
         'noplaylist': True,
         'quiet': False,
         'logger': YTDLLogger(bot, chat_id, msg_id),
-        'cookiefile': 'cookies.txt', # فایل کوکی برای دور زدن محدودیت یوتیوب
+        'cookiefile': 'cookies.txt', # فایل کوکی حتما باید کنار کد در گیت هاب باشد
         'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
         'http_headers': {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     }
 
-    if action == "360":
-        ydl_opts['format'] = 'bestvideo[height<=360]+bestaudio/best[height<=360]/best'
-    elif action == "720":
-        ydl_opts['format'] = 'bestvideo[height<=720]+bestaudio/best[height<=720]/best'
-    elif action == "1080":
-        ydl_opts['format'] = 'bestvideo[height<=1080]+bestaudio/best[height<=1080]/best'
-    elif action == "best":
+    # فرمت‌های جدید و هوشمند (بدون قفل روی رزولوشن تا هرگز ارور فرمت ندهد)
+    if action == "low":
+        ydl_opts['format'] = 'worstvideo+bestaudio/worst'
+    elif action == "high":
         ydl_opts['format'] = 'bestvideo+bestaudio/best'
+    elif action == "optimal":
+        ydl_opts['format'] = 'best' # این حالت بهترین فایل آماده و یکپارچه را دانلود میکند
     elif action == "mp3":
         ydl_opts['format'] = 'bestaudio/best'
-        ydl_opts['postprocessors'] = [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '320'}]
+        ydl_opts['postprocessors'] = [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '192'}]
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
