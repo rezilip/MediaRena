@@ -98,17 +98,26 @@ def callback_query(call):
     if call.data == "verify_join":
         if check_join(chat_id):
             bot.answer_callback_query(call.id, "🎉 عضویت شما تایید شد! حالا لینک خود را بفرستید.", show_alert=True)
-            try: bot.delete_message(chat_id, call.message.message_id); except: pass
+            try:
+                bot.delete_message(chat_id, call.message.message_id)
+            except:
+                pass
         else:
             bot.answer_callback_query(call.id, "❌ شما هنوز در کانال عضو نشده‌اید!", show_alert=True)
 
     elif call.data == "back_home":
         bot.answer_callback_query(call.id)
-        try: bot.delete_message(chat_id, call.message.message_id); except: pass
+        try:
+            bot.delete_message(chat_id, call.message.message_id)
+        except:
+            pass
         bot.send_message(chat_id, "🏠 **منوی اصلی:** لینک ویدیوی خود را ارسال کنید.", reply_markup=back_home_markup(chat_id), parse_mode="Markdown")
 
     elif call.data == "cancel":
-        try: bot.delete_message(chat_id, call.message.message_id); except: pass
+        try:
+            bot.delete_message(chat_id, call.message.message_id)
+        except:
+            pass
 
     elif call.data.startswith("dl_"):
         parts = call.data.split("_")
@@ -149,7 +158,8 @@ class YTDLLogger:
                     clean_msg = re.sub(r'\x1b[^m]*m', '', msg)
                     self.bot.edit_message_text(f"⏳ **در حال دانلود فایل از سرور...**\n\n`{clean_msg}`", self.chat_id, self.msg_id, parse_mode="Markdown")
                     self.last_update = now
-                except: pass
+                except:
+                    pass
     def warning(self, msg): pass
     def error(self, msg): pass
 
@@ -190,9 +200,14 @@ def core_downloader(message, url, action, dl_id):
                 bot.edit_message_text("✅ **دانلود کامل شد!** در حال ارسال فایل...", chat_id, msg_id, parse_mode="Markdown")
                 with open(target_file, 'rb') as f:
                     caption = f"📌 {title}\n\n🤖 دانلود شده توسط ربات مدیا رنا\n@{BOT_USERNAME}"
-                    if action == "mp3": bot.send_audio(chat_id, f, caption=caption, reply_markup=back_home_markup(chat_id))
-                    else: bot.send_video(chat_id, f, caption=caption, reply_markup=back_home_markup(chat_id))
-                try: bot.delete_message(chat_id, msg_id); except: pass
+                    if action == "mp3": 
+                        bot.send_audio(chat_id, f, caption=caption, reply_markup=back_home_markup(chat_id))
+                    else: 
+                        bot.send_video(chat_id, f, caption=caption, reply_markup=back_home_markup(chat_id))
+                try:
+                    bot.delete_message(chat_id, msg_id)
+                except:
+                    pass
 
             else:
                 bot.edit_message_text("🚀 **حجم فایل بیش از ۵۰ مگابایت است.** در حال آپلود هوشمند در فضای ابری...", chat_id, msg_id, parse_mode="Markdown")
@@ -205,12 +220,15 @@ def core_downloader(message, url, action, dl_id):
                     bot.edit_message_text("❌ **خطا در آپلود ابری.** لطفاً دوباره تلاش کنید.", chat_id, msg_id, parse_mode="Markdown")
 
     except Exception as e:
-        # نشان دادن متن دقیق ارور برای عیب یابی
         error_msg = str(e).replace('`', '')[:250]
         bot.edit_message_text(f"❌ **خطا در دانلود یا پردازش ویدیو.**\n\n**دلیل ارور:**\n`{error_msg}...`\n\n*(احتمالاً ویدیو محدودیت دارد یا به پلتفرم متصل نشد)*", chat_id, msg_id, parse_mode="Markdown")
     finally:
         for file in glob.glob(f"{dl_id}.*"):
-            try: os.remove(file); except: pass
+            try:
+                os.remove(file)
+            except:
+                pass
 
 if __name__ == '__main__':
+    print("MediaRenaBot & WebServer started successfully without syntax errors!")
     bot.infinity_polling()
