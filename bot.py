@@ -9,9 +9,15 @@ import re
 import glob
 import requests
 from flask import Flask
-import urllib.request
-import tarfile
-import stat
+from static_ffmpeg import run
+
+# ================= تزریق جادویی FFmpeg به سرور =================
+print("Initializing FFmpeg Engine...")
+try:
+    run.add_paths() # این خط تمام محدودیت‌های سرور رندر را نابود می‌کند!
+    print("FFmpeg is fully integrated and ready!")
+except Exception as e:
+    print(f"FFmpeg injection failed: {e}")
 
 # ================= تنظیمات اختصاصی ربات =================
 BOT_TOKEN = "8659065494:AAHcPGBd-zh4Pb1rUmZ4Eer5kiYFJW5X_G4"
@@ -24,36 +30,6 @@ DONATE_CARD = "۶۰۳۷-۹۹۹۹-۹۹۹۹-۹۹۹۹"
 DONATE_NAME = "علیرضا فتاحی"
 DONATE_CRYPTO = "TX... (TRC20)"
 
-# ================= نصب خودکار FFmpeg (حل قطعی مشکل رندر) =================
-def setup_ffmpeg():
-    if not os.path.exists('ffmpeg'):
-        try:
-            print("Downloading FFmpeg...")
-            urllib.request.urlretrieve("https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz", "ffmpeg.tar.xz")
-            print("Extracting FFmpeg...")
-            with tarfile.open("ffmpeg.tar.xz", "r:xz") as tar:
-                tar.extractall()
-            
-            extracted_folder = glob.glob("ffmpeg-*-static")[0]
-            os.rename(os.path.join(extracted_folder, "ffmpeg"), "ffmpeg")
-            os.rename(os.path.join(extracted_folder, "ffprobe"), "ffprobe")
-            
-            # دادن دسترسی اجرایی به فایل‌ها
-            st = os.stat('ffmpeg')
-            os.chmod('ffmpeg', st.st_mode | stat.S_IEXEC)
-            st = os.stat('ffprobe')
-            os.chmod('ffprobe', st.st_mode | stat.S_IEXEC)
-            
-            try:
-                os.remove("ffmpeg.tar.xz")
-            except Exception:
-                pass
-            print("FFmpeg setup complete!")
-        except Exception as e:
-            print(f"FFmpeg Error: {e}")
-
-setup_ffmpeg()
-
 bot = telebot.TeleBot(BOT_TOKEN)
 pending_downloads = {}
 
@@ -61,7 +37,7 @@ pending_downloads = {}
 app = Flask(__name__)
 @app.route('/')
 def home():
-    return "MediaRenaBot is running flawlessly on Render! 🚀"
+    return "MediaRenaBot is running flawlessly with Static-FFmpeg! 🚀"
 
 def run_web_server():
     port = int(os.environ.get("PORT", 8080))
@@ -136,60 +112,39 @@ def callback_query(call):
     if call.data == "verify_join":
         if check_join(chat_id):
             bot.answer_callback_query(call.id, "🎉 عضویت تایید شد!", show_alert=True)
-            try:
-                bot.delete_message(chat_id, call.message.message_id)
-            except Exception:
-                pass
+            try: bot.delete_message(chat_id, call.message.message_id); except Exception: pass
             bot.send_message(chat_id, "🏠 **منوی اصلی:**", reply_markup=main_menu_keyboard(), parse_mode="Markdown")
         else:
             bot.answer_callback_query(call.id, "❌ هنوز عضو نشده‌اید!", show_alert=True)
             
     elif call.data == "download_section":
         bot.answer_callback_query(call.id)
-        try:
-            bot.delete_message(chat_id, call.message.message_id)
-        except Exception:
-            pass
+        try: bot.delete_message(chat_id, call.message.message_id); except Exception: pass
         bot.send_message(chat_id, "📥 **لینک ویدیو را بفرستید.**", reply_markup=back_home_markup(), parse_mode="Markdown")
         
     elif call.data == "help":
         bot.answer_callback_query(call.id)
-        try:
-            bot.delete_message(chat_id, call.message.message_id)
-        except Exception:
-            pass
+        try: bot.delete_message(chat_id, call.message.message_id); except Exception: pass
         bot.send_message(chat_id, f"📖 **راهنما:**\nپشتیبانی از یوتیوب، اینستاگرام، تیک‌تاک و X.", reply_markup=back_home_markup(), parse_mode="Markdown")
         
     elif call.data == "support":
         bot.answer_callback_query(call.id)
-        try:
-            bot.delete_message(chat_id, call.message.message_id)
-        except Exception:
-            pass
+        try: bot.delete_message(chat_id, call.message.message_id); except Exception: pass
         msg = bot.send_message(chat_id, "📞 پیام خود را بنویسید:", reply_markup=back_home_markup())
         bot.register_next_step_handler(msg, process_support_message)
         
     elif call.data == "donate":
         bot.answer_callback_query(call.id)
-        try:
-            bot.delete_message(chat_id, call.message.message_id)
-        except Exception:
-            pass
+        try: bot.delete_message(chat_id, call.message.message_id); except Exception: pass
         bot.send_message(chat_id, f"☕️ **حمایت مالی:**\n💳 `{DONATE_CARD}`", reply_markup=back_home_markup(), parse_mode="Markdown")
         
     elif call.data == "back_home":
         bot.answer_callback_query(call.id)
-        try:
-            bot.delete_message(chat_id, call.message.message_id)
-        except Exception:
-            pass
+        try: bot.delete_message(chat_id, call.message.message_id); except Exception: pass
         bot.send_message(chat_id, "🏠 **منوی اصلی:**", reply_markup=main_menu_keyboard(), parse_mode="Markdown")
         
     elif call.data == "cancel":
-        try:
-            bot.delete_message(chat_id, call.message.message_id)
-        except Exception:
-            pass
+        try: bot.delete_message(chat_id, call.message.message_id); except Exception: pass
             
     elif call.data.startswith("dl_"):
         parts = call.data.split("_")
@@ -204,13 +159,11 @@ def callback_query(call):
         threading.Thread(target=core_downloader, args=(call.message, url, action, dl_id)).start()
 
 def process_support_message(message):
-    if not message.text:
-        return
+    if not message.text: return
     try:
         bot.send_message(ADMIN_ID, f"📞 پیام از: {message.from_user.first_name}\n💬 {message.text}")
         bot.send_message(message.chat.id, "✅ پیام ارسال شد.", reply_markup=back_home_markup())
-    except Exception:
-        pass
+    except Exception: pass
 
 def upload_to_cloud(file_path):
     try:
@@ -221,8 +174,7 @@ def upload_to_cloud(file_path):
             response = requests.post(url, data=data, files=files, timeout=90)
             if response.status_code == 200 and response.text.startswith('http'):
                 return response.text.strip()
-    except Exception:
-        pass
+    except Exception: pass
     return None
 
 class YTDLLogger:
@@ -237,10 +189,9 @@ class YTDLLogger:
             if now - self.last_update > 4: 
                 try:
                     clean_msg = re.sub(r'\x1b[^m]*m', '', msg)
-                    self.bot.edit_message_text(f"⏳ **در حال دانلود...**\n`{clean_msg}`", self.chat_id, self.msg_id, parse_mode="Markdown")
+                    self.bot.edit_message_text(f"⏳ **در حال دریافت ویدیو...**\n`{clean_msg}`", self.chat_id, self.msg_id, parse_mode="Markdown")
                     self.last_update = now
-                except Exception:
-                    pass
+                except Exception: pass
     def warning(self, msg): pass
     def error(self, msg): pass
 
@@ -253,7 +204,6 @@ def core_downloader(message, url, action, dl_id):
         'noplaylist': True,
         'quiet': False,
         'logger': YTDLLogger(bot, chat_id, msg_id),
-        'ffmpeg_location': './',  # استفاده از موتور اختصاصی که خود ربات نصب کرد
         'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
         'http_headers': {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     }
@@ -261,6 +211,7 @@ def core_downloader(message, url, action, dl_id):
     if os.path.exists('cookies.txt'):
         ydl_opts['cookiefile'] = 'cookies.txt'
 
+    # فرمت‌های ضدگلوله برای تمام ویدیوها (شورتز و عادی)
     if action == "low":
         ydl_opts['format'] = 'worstvideo+bestaudio/worst'
     elif action == "high":
@@ -270,42 +221,29 @@ def core_downloader(message, url, action, dl_id):
         ydl_opts['postprocessors'] = [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '192'}]
 
     try:
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(url, download=True)
-        except yt_dlp.utils.DownloadError as e:
-            if "Requested format is not available" in str(e):
-                bot.edit_message_text("🔄 **فرمت یافت نشد. موتور جایگزین...**", chat_id, msg_id, parse_mode="Markdown")
-                ydl_opts['format'] = 'best'
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(url, download=True)
-            else:
-                raise e
-
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            
         title = info.get('title', 'Media')
-        
         files = glob.glob(f"{dl_id}.*")
-        if not files:
-            raise Exception("فایلی دریافت نشد.")
+        
+        if not files: raise Exception("فایلی دریافت نشد.")
             
         target_file = files[0]
         file_size = os.path.getsize(target_file)
 
         if file_size < 50 * 1024 * 1024:
-            bot.edit_message_text("✅ در حال ارسال فایل...", chat_id, msg_id, parse_mode="Markdown")
+            bot.edit_message_text("✅ در حال ارسال به تلگرام...", chat_id, msg_id, parse_mode="Markdown")
             with open(target_file, 'rb') as f:
                 caption = f"📌 {title}\n\n🤖 @{BOT_USERNAME}"
                 if action == "mp3": 
                     bot.send_audio(chat_id, f, caption=caption, reply_markup=back_home_markup(chat_id))
                 else: 
                     bot.send_video(chat_id, f, caption=caption, reply_markup=back_home_markup(chat_id))
-            try:
-                bot.delete_message(chat_id, msg_id)
-            except Exception:
-                pass
+            try: bot.delete_message(chat_id, msg_id); except Exception: pass
 
         elif file_size < 200 * 1024 * 1024:
-            bot.edit_message_text("🚀 در حال آپلود ابری...", chat_id, msg_id, parse_mode="Markdown")
+            bot.edit_message_text("🚀 در حال آپلود در سرور ابری پرسرعت...", chat_id, msg_id, parse_mode="Markdown")
             cloud_url = upload_to_cloud(target_file)
             if cloud_url:
                 bot.edit_message_text(f"📌 **{title}**\n📥 **[لینک دانلود مستقیم]({cloud_url})**", chat_id, msg_id, parse_mode="Markdown", reply_markup=back_home_markup(chat_id))
@@ -315,14 +253,11 @@ def core_downloader(message, url, action, dl_id):
             bot.edit_message_text("❌ حجم فایل بیشتر از ۲۰۰ مگابایت است.", chat_id, msg_id, parse_mode="Markdown")
 
     except Exception as e:
-        error_msg = str(e).replace('`', '')[:100]
+        error_msg = str(e).replace('`', '')[:150]
         bot.edit_message_text(f"❌ **خطا:**\n`{error_msg}...`", chat_id, msg_id, parse_mode="Markdown")
     finally:
         for file in glob.glob(f"{dl_id}.*"):
-            try:
-                os.remove(file)
-            except Exception:
-                pass
+            try: os.remove(file); except Exception: pass
 
 if __name__ == '__main__':
     bot.infinity_polling()
