@@ -8,12 +8,13 @@ import time
 import re
 import glob
 import requests
+from flask import Flask # اضافه شدن برای حل مشکل پورت در Render
 
 # ================= تنظیمات اختصاصی ربات =================
-BOT_TOKEN = "8659065494:AAHdEetxaorQwURQSgLoFOW20NtIEP3LrRo" # توکن ربات خود را اینجا وارد کنید
-ADMIN_ID = 8516792883 # آیدی عددی ادمین
-CHANNEL_ID = "@MediaRena" # کانال رسمی ربات
-DEV_USERNAME = "irezafattahi" # آیدی سازنده/پشتیبانی
+BOT_TOKEN = "8659065494:AAHdEetxaorQwURQSgLoFOW20NtIEP3LrRo" # توکن ربات (@MediaRenaBot)
+ADMIN_ID = 8516792883
+CHANNEL_ID = "@MediaRena"
+DEV_USERNAME = "irezafattahi"
 BOT_USERNAME = "MediaRenaBot"
 
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -21,6 +22,19 @@ bot = telebot.TeleBot(BOT_TOKEN)
 users = set()
 banned_users = set()
 pending_downloads = {}
+
+# ================= حل مشکل وب‌سرویس Render (باز کردن پورت) =================
+app = Flask(__name__)
+@app.route('/')
+def home():
+    return "MediaRenaBot is running! 🚀"
+
+def run_web_server():
+    port = int(os.environ.get("PORT", 8080)) # گرفتن پورت از رندر
+    app.run(host="0.0.0.0", port=port)
+
+# روشن کردن سرور وب در پس‌زمینه
+threading.Thread(target=run_web_server, daemon=True).start()
 
 # ================= منوهای ربات =================
 def quality_keyboard(dl_id):
@@ -120,7 +134,6 @@ def callback_query(call):
         threading.Thread(target=core_downloader, args=(call.message, url, action, dl_id)).start()
 
 def upload_to_cloud(file_path):
-    """تابع آپلود هوشمند در آپلودسنتر ابری رایگان Catbox.moe"""
     try:
         url = "https://catbox.moe/user/api.php"
         with open(file_path, 'rb') as f:
@@ -130,7 +143,7 @@ def upload_to_cloud(file_path):
             if response.status_code == 200 and response.text.startswith('http'):
                 return response.text.strip()
     except Exception as e:
-        print(f"Upload error: {e}")
+        pass
     return None
 
 class YTDLLogger:
@@ -188,7 +201,6 @@ def core_downloader(message, url, action, dl_id):
             target_file = files[0]
             file_size = os.path.getsize(target_file)
 
-            # حالت اول: اگر فایل زیر ۵۰ مگابایت بود ➔ ارسال مستقیم فایل در تلگرام
             if file_size < 50 * 1024 * 1024:
                 bot.edit_message_text("✅ **دانلود کامل شد!** در حال ارسال فایل...", chat_id, msg_id, parse_mode="Markdown")
                 with open(target_file, 'rb') as f:
@@ -200,7 +212,6 @@ def core_downloader(message, url, action, dl_id):
                 try: bot.delete_message(chat_id, msg_id)
                 except: pass
 
-            # حالت دوم: اگر فایل بین ۵۰ تا ۳۰۰ مگابایت بود ➔ آپلود خودکار در فضای ابری و ارسال لینک کلمه‌ای "دانلود"
             else:
                 bot.edit_message_text("🚀 **حجم فایل بیش از ۵۰ مگابایت است.** در حال آپلود هوشمند در فضای ابری...", chat_id, msg_id, parse_mode="Markdown")
                 cloud_url = upload_to_cloud(target_file)
@@ -225,5 +236,5 @@ def core_downloader(message, url, action, dl_id):
             except: pass
 
 if __name__ == '__main__':
-    print("MediaRenaBot is running with Smart Cloud Upload System!")
+    print("MediaRenaBot & WebServer started successfully!")
     bot.infinity_polling()
