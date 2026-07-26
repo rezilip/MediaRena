@@ -11,9 +11,10 @@ import requests
 from flask import Flask
 import urllib.request
 import tarfile
+import stat
 
 # ================= تنظیمات اختصاصی ربات =================
-BOT_TOKEN = "8659065494:AAEyt2G0QBUDi0icUCGhCMdBuNtzz-TsRCE"
+BOT_TOKEN = "8659065494:AAHcPGBd-zh4Pb1rUmZ4Eer5kiYFJW5X_G4"
 ADMIN_ID = 8516792883
 CHANNEL_ID = "@MediaRena"
 DEV_USERNAME = "irezafattahi"
@@ -23,42 +24,44 @@ DONATE_CARD = "۶۰۳۷-۹۹۹۹-۹۹۹۹-۹۹۹۹"
 DONATE_NAME = "علیرضا فتاحی"
 DONATE_CRYPTO = "TX... (TRC20)"
 
-# ================= نصب خودکار موتور ترکیب ویدیو (FFmpeg) =================
+# ================= نصب خودکار FFmpeg (حل قطعی مشکل رندر) =================
 def setup_ffmpeg():
     if not os.path.exists('ffmpeg'):
         try:
-            print("Downloading FFmpeg engine...")
+            print("Downloading FFmpeg...")
             urllib.request.urlretrieve("https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz", "ffmpeg.tar.xz")
             print("Extracting FFmpeg...")
             with tarfile.open("ffmpeg.tar.xz", "r:xz") as tar:
                 tar.extractall()
             
-            ffmpeg_folder = glob.glob("ffmpeg-*-static")[0]
-            os.rename(os.path.join(ffmpeg_folder, "ffmpeg"), "ffmpeg")
-            os.rename(os.path.join(ffmpeg_folder, "ffprobe"), "ffprobe")
-            os.chmod("ffmpeg", 0o755)
-            os.chmod("ffprobe", 0o755)
+            extracted_folder = glob.glob("ffmpeg-*-static")[0]
+            os.rename(os.path.join(extracted_folder, "ffmpeg"), "ffmpeg")
+            os.rename(os.path.join(extracted_folder, "ffprobe"), "ffprobe")
+            
+            # دادن دسترسی اجرایی به فایل‌ها
+            st = os.stat('ffmpeg')
+            os.chmod('ffmpeg', st.st_mode | stat.S_IEXEC)
+            st = os.stat('ffprobe')
+            os.chmod('ffprobe', st.st_mode | stat.S_IEXEC)
             
             try:
                 os.remove("ffmpeg.tar.xz")
             except Exception:
                 pass
-            print("FFmpeg is fully installed and ready!")
+            print("FFmpeg setup complete!")
         except Exception as e:
-            print(f"FFmpeg setup error: {e}")
+            print(f"FFmpeg Error: {e}")
 
 setup_ffmpeg()
 
 bot = telebot.TeleBot(BOT_TOKEN)
-users = set()
-banned_users = set()
 pending_downloads = {}
 
-# ================= سرور وب (برای جلوگیری از خاموشی) =================
+# ================= سرور وب (رندر) =================
 app = Flask(__name__)
 @app.route('/')
 def home():
-    return "MediaRenaBot is running flawlessly! 🚀"
+    return "MediaRenaBot is running flawlessly on Render! 🚀"
 
 def run_web_server():
     port = int(os.environ.get("PORT", 8080))
@@ -109,76 +112,71 @@ def check_join(user_id):
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     chat_id = message.chat.id
-    if chat_id in banned_users: return
-    users.add(chat_id)
     if not check_join(chat_id):
-        bot.send_message(chat_id, "⚠️ **دسترسی محدود است!**\n\nجهت استفاده از خدمات، لطفاً ابتدا در کانال رسمی ما عضو شوید:", reply_markup=join_markup(), parse_mode="Markdown")
+        bot.send_message(chat_id, "⚠️ **دسترسی محدود است!**\nابتدا در کانال رسمی عضو شوید:", reply_markup=join_markup(), parse_mode="Markdown")
         return
-    text = f"✨ **سلام {message.from_user.first_name} عزیز، خوش آمدید!** 🌹\n\n🤖 به ربات هوشمند **مدیا رنا** خوش آمدید.\n\n👇 برای شروع، گزینه **«دانلود مدیا»** را انتخاب کنید یا لینک خود را مستقیم بفرستید:"
+    text = f"✨ **سلام {message.from_user.first_name} عزیز، خوش آمدید!** 🌹\n\n🤖 به ربات هوشمند **مدیا رنا** خوش آمدید.\n👇 لینک خود را بفرستید:"
     bot.send_message(chat_id, text, reply_markup=main_menu_keyboard(), parse_mode="Markdown")
 
 @bot.message_handler(regexp=r'https?://(www\.)?(youtube\.com|youtu\.be|instagram\.com|tiktok\.com|twitter\.com|x\.com)/.+')
 def handle_links(message):
     chat_id = message.chat.id
-    if chat_id in banned_users: return
     if not check_join(chat_id):
         bot.send_message(chat_id, "⚠️ لطفاً ابتدا در کانال عضو شوید:", reply_markup=join_markup())
         return
-    users.add(chat_id)
     url = message.text
     dl_id = str(uuid.uuid4())[:8]
     pending_downloads[dl_id] = url
-    bot.reply_to(message, "🎯 **لینک با موفقیت شناسایی شد!**\n\n👇 لطفاً کیفیت مورد نظر خود را انتخاب کنید:", reply_markup=quality_keyboard(dl_id), parse_mode="Markdown")
+    bot.reply_to(message, "🎯 **لینک شناسایی شد!**\n👇 کیفیت را انتخاب کنید:", reply_markup=quality_keyboard(dl_id), parse_mode="Markdown")
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     chat_id = call.message.chat.id
-    if chat_id in banned_users: return
-
+    
     if call.data == "verify_join":
         if check_join(chat_id):
-            bot.answer_callback_query(call.id, "🎉 عضویت شما تایید شد!", show_alert=True)
+            bot.answer_callback_query(call.id, "🎉 عضویت تایید شد!", show_alert=True)
             try:
                 bot.delete_message(chat_id, call.message.message_id)
             except Exception:
                 pass
             bot.send_message(chat_id, "🏠 **منوی اصلی:**", reply_markup=main_menu_keyboard(), parse_mode="Markdown")
         else:
-            bot.answer_callback_query(call.id, "❌ شما هنوز در کانال عضو نشده‌اید!", show_alert=True)
-
+            bot.answer_callback_query(call.id, "❌ هنوز عضو نشده‌اید!", show_alert=True)
+            
     elif call.data == "download_section":
         bot.answer_callback_query(call.id)
         try:
             bot.delete_message(chat_id, call.message.message_id)
         except Exception:
             pass
-        bot.send_message(chat_id, "📥 **بخش دانلودر هوشمند:**\n\nلینک ویدیو، پست یا ریلز خود را بفرستید.\n\nپلتفرم‌های پشتیبانی‌شده:\n📺 **یوتیوب** | 📸 **اینستاگرام**\n🎵 **تیک‌تاک** | 🐦 **توییتر (X)**", reply_markup=back_home_markup(), parse_mode="Markdown")
-
+        bot.send_message(chat_id, "📥 **لینک ویدیو را بفرستید.**", reply_markup=back_home_markup(), parse_mode="Markdown")
+        
     elif call.data == "help":
         bot.answer_callback_query(call.id)
         try:
             bot.delete_message(chat_id, call.message.message_id)
         except Exception:
             pass
-        bot.send_message(chat_id, f"📖 **راهنمای جامع:**\n\n**۱.** لینک ویدیو را بفرستید و کیفیت را انتخاب کنید.\n**۲.** حجم زیر ۵۰ مگابایت مستقیم ارسال می‌شود.\n**۳.** حجم بین ۵۰ تا ۲۰۰ مگابایت در فضای ابری آپلود شده و لینک پرسرعت دریافت می‌کنید.\n\n📢 **کانال:** {CHANNEL_ID}\n👨‍💻 **سازنده:** `@{DEV_USERNAME}`", reply_markup=back_home_markup(), parse_mode="Markdown")
-
+        bot.send_message(chat_id, f"📖 **راهنما:**\nپشتیبانی از یوتیوب، اینستاگرام، تیک‌تاک و X.", reply_markup=back_home_markup(), parse_mode="Markdown")
+        
     elif call.data == "support":
         bot.answer_callback_query(call.id)
         try:
             bot.delete_message(chat_id, call.message.message_id)
         except Exception:
             pass
-        msg = bot.send_message(chat_id, "📞 **ارتباط با پشتیبانی:**\n\nپیام خود را کامل بنویسید و ارسال کنید:", reply_markup=back_home_markup(), parse_mode="Markdown")
+        msg = bot.send_message(chat_id, "📞 پیام خود را بنویسید:", reply_markup=back_home_markup())
         bot.register_next_step_handler(msg, process_support_message)
-
+        
     elif call.data == "donate":
         bot.answer_callback_query(call.id)
         try:
             bot.delete_message(chat_id, call.message.message_id)
         except Exception:
             pass
-        bot.send_message(chat_id, f"☕️ **حمایت مالی:**\n\nاگر این ربات برای شما کاربردی بوده، با حمایت مالی به زنده ماندن این پروژه کمک کنید! ❤️\n\n💳 **کارت:** `{DONATE_CARD}`\n🪙 **تتر/ترون:** `{DONATE_CRYPTO}`", reply_markup=back_home_markup(), parse_mode="Markdown")
-
+        bot.send_message(chat_id, f"☕️ **حمایت مالی:**\n💳 `{DONATE_CARD}`", reply_markup=back_home_markup(), parse_mode="Markdown")
+        
     elif call.data == "back_home":
         bot.answer_callback_query(call.id)
         try:
@@ -186,30 +184,31 @@ def callback_query(call):
         except Exception:
             pass
         bot.send_message(chat_id, "🏠 **منوی اصلی:**", reply_markup=main_menu_keyboard(), parse_mode="Markdown")
-
+        
     elif call.data == "cancel":
         try:
             bot.delete_message(chat_id, call.message.message_id)
         except Exception:
             pass
-
+            
     elif call.data.startswith("dl_"):
         parts = call.data.split("_")
         dl_id = parts[1]
         action = parts[2]
         url = pending_downloads.get(dl_id)
         if not url:
-            bot.answer_callback_query(call.id, "❌ درخواست منقضی شده است. لینک را دوباره بفرستید.", show_alert=True)
+            bot.answer_callback_query(call.id, "❌ درخواست منقضی شده است.", show_alert=True)
             return
-        bot.edit_message_text("⏳ **در حال استخراج و پردازش فایل...** لطفاً صبور باشید.", chat_id, call.message.message_id, parse_mode="Markdown")
+        bot.edit_message_text("⏳ **در حال دانلود و پردازش...**", chat_id, call.message.message_id, parse_mode="Markdown")
         del pending_downloads[dl_id]
         threading.Thread(target=core_downloader, args=(call.message, url, action, dl_id)).start()
 
 def process_support_message(message):
-    if not message.text: return
+    if not message.text:
+        return
     try:
-        bot.send_message(ADMIN_ID, f"📞 **پیام جدید از پشتیبانی:**\n\n👤 کاربر: {message.from_user.first_name}\n💬 پیام:\n{message.text}", parse_mode="Markdown")
-        bot.reply_to(message, "✅ پیام شما ارسال شد.", reply_markup=back_home_markup(message.chat.id))
+        bot.send_message(ADMIN_ID, f"📞 پیام از: {message.from_user.first_name}\n💬 {message.text}")
+        bot.send_message(message.chat.id, "✅ پیام ارسال شد.", reply_markup=back_home_markup())
     except Exception:
         pass
 
@@ -238,7 +237,7 @@ class YTDLLogger:
             if now - self.last_update > 4: 
                 try:
                     clean_msg = re.sub(r'\x1b[^m]*m', '', msg)
-                    self.bot.edit_message_text(f"⏳ **در حال دریافت اطلاعات...**\n\n`{clean_msg}`", self.chat_id, self.msg_id, parse_mode="Markdown")
+                    self.bot.edit_message_text(f"⏳ **در حال دانلود...**\n`{clean_msg}`", self.chat_id, self.msg_id, parse_mode="Markdown")
                     self.last_update = now
                 except Exception:
                     pass
@@ -254,7 +253,7 @@ def core_downloader(message, url, action, dl_id):
         'noplaylist': True,
         'quiet': False,
         'logger': YTDLLogger(bot, chat_id, msg_id),
-        'ffmpeg_location': './', # الان این پوشه کاملا کار میکند چون FFmpeg نصب شد
+        'ffmpeg_location': './',  # استفاده از موتور اختصاصی که خود ربات نصب کرد
         'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
         'http_headers': {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     }
@@ -262,7 +261,6 @@ def core_downloader(message, url, action, dl_id):
     if os.path.exists('cookies.txt'):
         ydl_opts['cookiefile'] = 'cookies.txt'
 
-    # فرمت‌های تضمینی با قابلیت پردازش در رندر
     if action == "low":
         ydl_opts['format'] = 'worstvideo+bestaudio/worst'
     elif action == "high":
@@ -277,7 +275,7 @@ def core_downloader(message, url, action, dl_id):
                 info = ydl.extract_info(url, download=True)
         except yt_dlp.utils.DownloadError as e:
             if "Requested format is not available" in str(e):
-                bot.edit_message_text("🔄 **فرمت یافت نشد. در حال تنظیم موتور جایگزین هوشمند...**", chat_id, msg_id, parse_mode="Markdown")
+                bot.edit_message_text("🔄 **فرمت یافت نشد. موتور جایگزین...**", chat_id, msg_id, parse_mode="Markdown")
                 ydl_opts['format'] = 'best'
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(url, download=True)
@@ -294,7 +292,7 @@ def core_downloader(message, url, action, dl_id):
         file_size = os.path.getsize(target_file)
 
         if file_size < 50 * 1024 * 1024:
-            bot.edit_message_text("✅ **دانلود کامل شد!** در حال ارسال فایل...", chat_id, msg_id, parse_mode="Markdown")
+            bot.edit_message_text("✅ در حال ارسال فایل...", chat_id, msg_id, parse_mode="Markdown")
             with open(target_file, 'rb') as f:
                 caption = f"📌 {title}\n\n🤖 @{BOT_USERNAME}"
                 if action == "mp3": 
@@ -307,21 +305,18 @@ def core_downloader(message, url, action, dl_id):
                 pass
 
         elif file_size < 200 * 1024 * 1024:
-            bot.edit_message_text("🚀 **حجم فایل بیش از ۵۰ مگابایت است.** در حال آپلود در سرور ابری...", chat_id, msg_id, parse_mode="Markdown")
+            bot.edit_message_text("🚀 در حال آپلود ابری...", chat_id, msg_id, parse_mode="Markdown")
             cloud_url = upload_to_cloud(target_file)
             if cloud_url:
-                msg_text = f"📌 **{title}**\n\n⚖️ حجم فایل: {round(file_size / (1024*1024), 1)} مگابایت\n🔗 برای دریافت فایل کلیک کنید:\n\n📥 **[لینک دانلود مستقیم]({cloud_url})**"
-                bot.edit_message_text(msg_text, chat_id, msg_id, parse_mode="Markdown", reply_markup=back_home_markup(chat_id))
+                bot.edit_message_text(f"📌 **{title}**\n📥 **[لینک دانلود مستقیم]({cloud_url})**", chat_id, msg_id, parse_mode="Markdown", reply_markup=back_home_markup(chat_id))
             else:
-                bot.edit_message_text("❌ **خطا در اتصال به سرور ابری.**", chat_id, msg_id, parse_mode="Markdown")
+                bot.edit_message_text("❌ خطا در اتصال ابری.", chat_id, msg_id, parse_mode="Markdown")
         else:
-            bot.edit_message_text("❌ **حجم فایل بیشتر از ۲۰۰ مگابایت است.**", chat_id, msg_id, parse_mode="Markdown")
+            bot.edit_message_text("❌ حجم فایل بیشتر از ۲۰۰ مگابایت است.", chat_id, msg_id, parse_mode="Markdown")
 
-    except yt_dlp.utils.DownloadError as e:
-        error_msg = str(e).replace('`', '')[:250]
-        bot.edit_message_text(f"❌ **خطای پردازش:**\n`{error_msg}...`", chat_id, msg_id, parse_mode="Markdown")
     except Exception as e:
-        bot.edit_message_text("❌ **خطای سیستمی رخ داد.**", chat_id, msg_id, parse_mode="Markdown")
+        error_msg = str(e).replace('`', '')[:100]
+        bot.edit_message_text(f"❌ **خطا:**\n`{error_msg}...`", chat_id, msg_id, parse_mode="Markdown")
     finally:
         for file in glob.glob(f"{dl_id}.*"):
             try:
