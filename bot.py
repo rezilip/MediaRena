@@ -9,6 +9,8 @@ import re
 import glob
 import requests
 from flask import Flask
+import urllib.request
+import tarfile
 
 # ================= تنظیمات اختصاصی ربات =================
 BOT_TOKEN = "8659065494:AAEyt2G0QBUDi0icUCGhCMdBuNtzz-TsRCE"
@@ -21,16 +23,44 @@ DONATE_CARD = "۶۰۳۷-۹۹۹۹-۹۹۹۹-۹۹۹۹"
 DONATE_NAME = "علیرضا فتاحی"
 DONATE_CRYPTO = "TX... (TRC20)"
 
+# ================= نصب خودکار موتور ترکیب ویدیو =================
+# این قطعه کد جادویی، مشکل نبود FFmpeg در سرور Render را کاملاً حل می‌کند
+def setup_ffmpeg():
+    if not os.path.exists('ffmpeg'):
+        try:
+            print("Downloading FFmpeg engine... (This takes a few seconds)")
+            urllib.request.urlretrieve("https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz", "ffmpeg.tar.xz")
+            print("Extracting FFmpeg...")
+            with tarfile.open("ffmpeg.tar.xz", "r:xz") as tar:
+                tar.extractall()
+            
+            ffmpeg_folder = glob.glob("ffmpeg-*-static")[0]
+            os.rename(os.path.join(ffmpeg_folder, "ffmpeg"), "ffmpeg")
+            os.rename(os.path.join(ffmpeg_folder, "ffprobe"), "ffprobe")
+            os.chmod("ffmpeg", 0o755)
+            os.chmod("ffprobe", 0o755)
+            
+            try:
+                os.remove("ffmpeg.tar.xz")
+            except:
+                pass
+            print("FFmpeg is fully installed and ready!")
+        except Exception as e:
+            print(f"FFmpeg setup error: {e}")
+
+setup_ffmpeg()
+
+# ================= راه‌اندازی ربات =================
 bot = telebot.TeleBot(BOT_TOKEN)
 users = set()
 banned_users = set()
 pending_downloads = {}
 
-# ================= سرور وب =================
+# ================= سرور وب (برای جلوگیری از خاموشی) =================
 app = Flask(__name__)
 @app.route('/')
 def home():
-    return "MediaRenaBot is completely bulletproof now! 🚀"
+    return "MediaRenaBot is running with an integrated FFmpeg engine! 🚀"
 
 def run_web_server():
     port = int(os.environ.get("PORT", 8080))
@@ -64,7 +94,7 @@ def quality_keyboard(dl_id):
     markup = InlineKeyboardMarkup()
     markup.row(InlineKeyboardButton("🔻 کیفیت پایین (حجم کم)", callback_data=f"dl_{dl_id}_low"))
     markup.row(InlineKeyboardButton("🌟 کیفیت عالی / بهینه", callback_data=f"dl_{dl_id}_high"))
-    markup.row(InlineKeyboardButton("🎵 فقط صوت (کیفیت اصلی)", callback_data=f"dl_{dl_id}_mp3"))
+    markup.row(InlineKeyboardButton("🎵 فقط صوت (MP3)", callback_data=f"dl_{dl_id}_mp3"))
     markup.row(InlineKeyboardButton("❌ لغو عملیات", callback_data="cancel"))
     return markup
 
@@ -86,7 +116,7 @@ def send_welcome(message):
     if not check_join(chat_id):
         bot.send_message(chat_id, "⚠️ **دسترسی محدود است!**\n\nجهت استفاده از خدمات، لطفاً ابتدا در کانال رسمی ما عضو شوید:", reply_markup=join_markup(), parse_mode="Markdown")
         return
-    text = f"✨ **سلام {message.from_user.first_name} عزیز، خوش آمدید!** 🌹\n\n🤖 به ربات هوشمند و پیشرفته **مدیا رنا** خوش آمدید.\n\n👇 برای شروع، گزینه **«دانلود مدیا»** را انتخاب کنید یا لینک خود را مستقیم بفرستید:"
+    text = f"✨ **سلام {message.from_user.first_name} عزیز، خوش آمدید!** 🌹\n\n🤖 به ربات هوشمند **مدیا رنا** خوش آمدید.\n\n👇 برای شروع، گزینه **«دانلود مدیا»** را انتخاب کنید یا لینک خود را مستقیم بفرستید:"
     bot.send_message(chat_id, text, reply_markup=main_menu_keyboard(), parse_mode="Markdown")
 
 @bot.message_handler(regexp=r'https?://(www\.)?(youtube\.com|youtu\.be|instagram\.com|tiktok\.com|twitter\.com|x\.com)/.+')
@@ -152,7 +182,7 @@ def callback_query(call):
         if not url:
             bot.answer_callback_query(call.id, "❌ درخواست منقضی شده است. لینک را دوباره بفرستید.", show_alert=True)
             return
-        bot.edit_message_text("⏳ **در حال دریافت مستقیم فایل...** لطفاً صبور باشید.", chat_id, call.message.message_id, parse_mode="Markdown")
+        bot.edit_message_text("⏳ **در حال استخراج و پردازش فایل...** لطفاً صبور باشید.", chat_id, call.message.message_id, parse_mode="Markdown")
         del pending_downloads[dl_id]
         threading.Thread(target=core_downloader, args=(call.message, url, action, dl_id)).start()
 
@@ -187,7 +217,7 @@ class YTDLLogger:
             if now - self.last_update > 4: 
                 try:
                     clean_msg = re.sub(r'\x1b[^m]*m', '', msg)
-                    self.bot.edit_message_text(f"⏳ **در حال دانلود...**\n\n`{clean_msg}`", self.chat_id, self.msg_id, parse_mode="Markdown")
+                    self.bot.edit_message_text(f"⏳ **در حال دریافت اطلاعات...**\n\n`{clean_msg}`", self.chat_id, self.msg_id, parse_mode="Markdown")
                     self.last_update = now
                 except: pass
     def warning(self, msg): pass
@@ -202,20 +232,22 @@ def core_downloader(message, url, action, dl_id):
         'noplaylist': True,
         'quiet': False,
         'logger': YTDLLogger(bot, chat_id, msg_id),
-        'cookiefile': 'cookies.txt', # حتما فایل کوکی کنار این کد در گیت هاب باشد
+        'ffmpeg_location': './', # هدایت ربات به سمت مبدلی که الان خودش دانلود کرد
         'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
         'http_headers': {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     }
+    
+    if os.path.exists('cookies.txt'):
+        ydl_opts['cookiefile'] = 'cookies.txt'
 
-    # =========================================================
-    # فرمت‌های بدون نیاز به مبدل (غیرممکن است ارور فرمت بدهد)
-    # =========================================================
+    # فرمت‌های جدید که تمام ویدیوها را بی برو برگرد ساپورت میکنند
     if action == "low":
-        ydl_opts['format'] = 'worst' # ضعیف‌ترین فایل آماده
+        ydl_opts['format'] = 'worstvideo+bestaudio/worst' 
     elif action == "high":
-        ydl_opts['format'] = 'best' # بهترین فایل آماده
+        ydl_opts['format'] = 'bestvideo+bestaudio/best' 
     elif action == "mp3":
-        ydl_opts['format'] = 'bestaudio[ext=m4a]/bestaudio' # موزیک اصلی بدون نیاز به تبدیل فرمت
+        ydl_opts['format'] = 'bestaudio/best'
+        ydl_opts['postprocessors'] = [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '192'}]
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -238,7 +270,7 @@ def core_downloader(message, url, action, dl_id):
                 try: bot.delete_message(chat_id, msg_id); except: pass
 
             elif file_size < 200 * 1024 * 1024:
-                bot.edit_message_text("🚀 **حجم فایل بیش از ۵۰ مگابایت است.** در حال آپلود ابری (ممکن است ۱ دقیقه زمان ببرد)...", chat_id, msg_id, parse_mode="Markdown")
+                bot.edit_message_text("🚀 **حجم فایل بیش از ۵۰ مگابایت است.** در حال آپلود در سرور ابری...", chat_id, msg_id, parse_mode="Markdown")
                 cloud_url = upload_to_cloud(target_file)
                 if cloud_url:
                     msg_text = f"📌 **{title}**\n\n⚖️ حجم فایل: {round(file_size / (1024*1024), 1)} مگابایت\n🔗 برای دریافت فایل کلیک کنید:\n\n📥 **[لینک دانلود مستقیم]({cloud_url})**"
@@ -246,7 +278,7 @@ def core_downloader(message, url, action, dl_id):
                 else:
                     bot.edit_message_text("❌ **خطا در اتصال به سرور ابری.**", chat_id, msg_id, parse_mode="Markdown")
             else:
-                bot.edit_message_text("❌ **حجم فایل بیشتر از ۲۰۰ مگابایت است.** آپلودسنتر ظرفیت آن را ندارد.", chat_id, msg_id, parse_mode="Markdown")
+                bot.edit_message_text("❌ **حجم فایل بیشتر از ۲۰۰ مگابایت است.**", chat_id, msg_id, parse_mode="Markdown")
 
     except yt_dlp.utils.DownloadError as e:
         error_msg = str(e).replace('`', '')[:250]
