@@ -11,7 +11,7 @@ import requests
 from flask import Flask
 
 # ================= تنظیمات اختصاصی ربات =================
-BOT_TOKEN = "8659065494:AAG7szKc4o8iqFNZWOehXunV0bfovQ96ykA" # حتماً توکن جدیدی که با Revoke گرفتید را بگذارید
+BOT_TOKEN = "8659065494:AAGwn_rVeYpxr4LIHXIHuH36ZK2PoaVJ1Kg"
 ADMIN_ID = 8516792883
 CHANNEL_ID = "@MediaRena"
 DEV_USERNAME = "irezafattahi"
@@ -112,39 +112,60 @@ def callback_query(call):
     if call.data == "verify_join":
         if check_join(chat_id):
             bot.answer_callback_query(call.id, "🎉 عضویت شما تایید شد!", show_alert=True)
-            try: bot.delete_message(chat_id, call.message.message_id); except: pass
+            try:
+                bot.delete_message(chat_id, call.message.message_id)
+            except:
+                pass
             bot.send_message(chat_id, "🏠 **منوی اصلی:**", reply_markup=main_menu_keyboard(), parse_mode="Markdown")
         else:
             bot.answer_callback_query(call.id, "❌ شما هنوز در کانال عضو نشده‌اید!", show_alert=True)
 
     elif call.data == "download_section":
         bot.answer_callback_query(call.id)
-        try: bot.delete_message(chat_id, call.message.message_id); except: pass
+        try:
+            bot.delete_message(chat_id, call.message.message_id)
+        except:
+            pass
         bot.send_message(chat_id, "📥 **بخش دانلودر هوشمند:**\n\nبرای دانلود، کافیست لینک ویدیو، پست یا ریلز خود را کپی کرده و بفرستید.\n\nپلتفرم‌های پشتیبانی‌شده:\n📺 **یوتیوب** | 📸 **اینستاگرام**\n🎵 **تیک‌تاک** | 🐦 **توییتر (X)**", reply_markup=back_home_markup(), parse_mode="Markdown")
 
     elif call.data == "help":
         bot.answer_callback_query(call.id)
-        try: bot.delete_message(chat_id, call.message.message_id); except: pass
+        try:
+            bot.delete_message(chat_id, call.message.message_id)
+        except:
+            pass
         bot.send_message(chat_id, f"📖 **راهنمای جامع:**\n\n**۱.** لینک ویدیو را بفرستید و کیفیت را انتخاب کنید.\n**۲.** حجم زیر ۵۰ مگابایت مستقیم ارسال می‌شود.\n**۳.** حجم بین ۵۰ تا ۲۰۰ مگابایت در فضای ابری آپلود شده و لینک پرسرعت دریافت می‌کنید.\n\n📢 **کانال:** {CHANNEL_ID}\n👨‍💻 **سازنده:** `@{DEV_USERNAME}`", reply_markup=back_home_markup(), parse_mode="Markdown")
 
     elif call.data == "support":
         bot.answer_callback_query(call.id)
-        try: bot.delete_message(chat_id, call.message.message_id); except: pass
+        try:
+            bot.delete_message(chat_id, call.message.message_id)
+        except:
+            pass
         msg = bot.send_message(chat_id, "📞 **ارتباط با پشتیبانی:**\n\nپیام خود را در یک قالب کامل بنویسید و ارسال کنید:", reply_markup=back_home_markup(), parse_mode="Markdown")
         bot.register_next_step_handler(msg, process_support_message)
 
     elif call.data == "donate":
         bot.answer_callback_query(call.id)
-        try: bot.delete_message(chat_id, call.message.message_id); except: pass
+        try:
+            bot.delete_message(chat_id, call.message.message_id)
+        except:
+            pass
         bot.send_message(chat_id, f"☕️ **حمایت مالی:**\n\nاگر این ربات برای شما کاربردی بوده، می‌توانید با حمایت مالی به زنده ماندن این پروژه کمک کنید! ❤️\n\n💳 **کارت:** `{DONATE_CARD}`\n🪙 **تتر/ترون:** `{DONATE_CRYPTO}`", reply_markup=back_home_markup(), parse_mode="Markdown")
 
     elif call.data == "back_home":
         bot.answer_callback_query(call.id)
-        try: bot.delete_message(chat_id, call.message.message_id); except: pass
+        try:
+            bot.delete_message(chat_id, call.message.message_id)
+        except:
+            pass
         bot.send_message(chat_id, "🏠 **منوی اصلی:**", reply_markup=main_menu_keyboard(), parse_mode="Markdown")
 
     elif call.data == "cancel":
-        try: bot.delete_message(chat_id, call.message.message_id); except: pass
+        try:
+            bot.delete_message(chat_id, call.message.message_id)
+        except:
+            pass
 
     elif call.data.startswith("dl_"):
         parts = call.data.split("_")
@@ -163,7 +184,8 @@ def process_support_message(message):
     try:
         bot.send_message(ADMIN_ID, f"📞 **پیام جدید از پشتیبانی:**\n\n👤 کاربر: {message.from_user.first_name}\n💬 پیام:\n{message.text}", parse_mode="Markdown")
         bot.reply_to(message, "✅ پیام شما ارسال شد.", reply_markup=back_home_markup(message.chat.id))
-    except: pass
+    except:
+        pass
 
 def upload_to_cloud(file_path):
     try:
@@ -174,7 +196,8 @@ def upload_to_cloud(file_path):
             response = requests.post(url, data=data, files=files, timeout=90)
             if response.status_code == 200 and response.text.startswith('http'):
                 return response.text.strip()
-    except: pass
+    except:
+        pass
     return None
 
 class YTDLLogger:
@@ -191,7 +214,8 @@ class YTDLLogger:
                     clean_msg = re.sub(r'\x1b[^m]*m', '', msg)
                     self.bot.edit_message_text(f"⏳ **در حال دانلود...**\n\n`{clean_msg}`", self.chat_id, self.msg_id, parse_mode="Markdown")
                     self.last_update = now
-                except: pass
+                except:
+                    pass
     def warning(self, msg): pass
     def error(self, msg): pass
 
@@ -209,11 +233,14 @@ def core_downloader(message, url, action, dl_id):
         'http_headers': {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     }
 
-    # فرمت‌های ضدگلوله جدید (بدون محدودیت قبل از دانلود تا ارور format not available ندهد)
-    if action == "360": ydl_opts['format'] = 'bestvideo[height<=360]+bestaudio/best[height<=360]/best'
-    elif action == "720": ydl_opts['format'] = 'bestvideo[height<=720]+bestaudio/best[height<=720]/best'
-    elif action == "1080": ydl_opts['format'] = 'bestvideo[height<=1080]+bestaudio/best[height<=1080]/best'
-    elif action == "best": ydl_opts['format'] = 'bestvideo+bestaudio/best'
+    if action == "360":
+        ydl_opts['format'] = 'bestvideo[height<=360]+bestaudio/best[height<=360]/best'
+    elif action == "720":
+        ydl_opts['format'] = 'bestvideo[height<=720]+bestaudio/best[height<=720]/best'
+    elif action == "1080":
+        ydl_opts['format'] = 'bestvideo[height<=1080]+bestaudio/best[height<=1080]/best'
+    elif action == "best":
+        ydl_opts['format'] = 'bestvideo+bestaudio/best'
     elif action == "mp3":
         ydl_opts['format'] = 'bestaudio/best'
         ydl_opts['postprocessors'] = [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '320'}]
@@ -232,11 +259,16 @@ def core_downloader(message, url, action, dl_id):
                 bot.edit_message_text("✅ **دانلود کامل شد!** در حال ارسال مستقیم فایل...", chat_id, msg_id, parse_mode="Markdown")
                 with open(target_file, 'rb') as f:
                     caption = f"📌 {title}\n\n🤖 @{BOT_USERNAME}"
-                    if action == "mp3": bot.send_audio(chat_id, f, caption=caption, reply_markup=back_home_markup(chat_id))
-                    else: bot.send_video(chat_id, f, caption=caption, reply_markup=back_home_markup(chat_id))
-                try: bot.delete_message(chat_id, msg_id); except: pass
+                    if action == "mp3":
+                        bot.send_audio(chat_id, f, caption=caption, reply_markup=back_home_markup(chat_id))
+                    else:
+                        bot.send_video(chat_id, f, caption=caption, reply_markup=back_home_markup(chat_id))
+                try:
+                    bot.delete_message(chat_id, msg_id)
+                except:
+                    pass
 
-            elif file_size < 200 * 1024 * 1024: # لیمیت واقعی Catbox 200 مگابایت است
+            elif file_size < 200 * 1024 * 1024:
                 bot.edit_message_text("🚀 **حجم فایل بیش از ۵۰ مگابایت است.** در حال آپلود ابری (ممکن است کمی زمان ببرد)...", chat_id, msg_id, parse_mode="Markdown")
                 cloud_url = upload_to_cloud(target_file)
                 if cloud_url:
@@ -254,7 +286,10 @@ def core_downloader(message, url, action, dl_id):
         bot.edit_message_text("❌ **خطای پیش‌بینی نشده رخ داد.**", chat_id, msg_id, parse_mode="Markdown")
     finally:
         for file in glob.glob(f"{dl_id}.*"):
-            try: os.remove(file); except: pass
+            try:
+                os.remove(file)
+            except:
+                pass
 
 if __name__ == '__main__':
     bot.infinity_polling()
