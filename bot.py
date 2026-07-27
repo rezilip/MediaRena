@@ -20,7 +20,7 @@ except Exception as e:
     print(f"FFmpeg injection failed: {e}")
 
 # ================= تنظیمات اختصاصی ربات =================
-BOT_TOKEN = "8659065494:AAGdGDkmcOPuwAwDiRZIGVUgHYww5FtEzAM"
+BOT_TOKEN = "8659065494:AAHcPGBd-zh4Pb1rUmZ4Eer5kiYFJW5X_G4"
 ADMIN_ID = 8516792883
 CHANNEL_ID = "@MediaRena"
 DEV_USERNAME = "irezafattahi"
@@ -113,8 +113,11 @@ def callback_query(call):
         if check_join(chat_id):
             bot.answer_callback_query(call.id, "🎉 عضویت تایید شد!", show_alert=True)
             try:
+
                 bot.delete_message(chat_id, call.message.message_id)
+
             except Exception:
+
                 pass
             bot.send_message(chat_id, "🏠 **منوی اصلی:**", reply_markup=main_menu_keyboard(), parse_mode="Markdown")
         else:
@@ -123,24 +126,33 @@ def callback_query(call):
     elif call.data == "download_section":
         bot.answer_callback_query(call.id)
         try:
+
             bot.delete_message(chat_id, call.message.message_id)
+
         except Exception:
+
             pass
         bot.send_message(chat_id, "📥 **لینک ویدیو را بفرستید.**", reply_markup=back_home_markup(), parse_mode="Markdown")
         
     elif call.data == "help":
         bot.answer_callback_query(call.id)
         try:
+
             bot.delete_message(chat_id, call.message.message_id)
+
         except Exception:
+
             pass
         bot.send_message(chat_id, f"📖 **راهنما:**\nپشتیبانی از یوتیوب، اینستاگرام، تیک‌تاک و X.", reply_markup=back_home_markup(), parse_mode="Markdown")
         
     elif call.data == "support":
         bot.answer_callback_query(call.id)
         try:
+
             bot.delete_message(chat_id, call.message.message_id)
+
         except Exception:
+
             pass
         msg = bot.send_message(chat_id, "📞 پیام خود را بنویسید:", reply_markup=back_home_markup())
         bot.register_next_step_handler(msg, process_support_message)
@@ -148,23 +160,32 @@ def callback_query(call):
     elif call.data == "donate":
         bot.answer_callback_query(call.id)
         try:
+
             bot.delete_message(chat_id, call.message.message_id)
+
         except Exception:
+
             pass
         bot.send_message(chat_id, f"☕️ **حمایت مالی:**\n💳 `{DONATE_CARD}`", reply_markup=back_home_markup(), parse_mode="Markdown")
         
     elif call.data == "back_home":
         bot.answer_callback_query(call.id)
         try:
+
             bot.delete_message(chat_id, call.message.message_id)
+
         except Exception:
+
             pass
         bot.send_message(chat_id, "🏠 **منوی اصلی:**", reply_markup=main_menu_keyboard(), parse_mode="Markdown")
         
     elif call.data == "cancel":
         try:
+
             bot.delete_message(chat_id, call.message.message_id)
+
         except Exception:
+
             pass
             
     elif call.data.startswith("dl_"):
@@ -225,18 +246,18 @@ def core_downloader(message, url, action, dl_id):
         'noplaylist': True,
         'quiet': False,
         'logger': YTDLLogger(bot, chat_id, msg_id),
-        'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
+        'extractor_args': {'youtube': {'player_client': ['tv', 'web_embedded', 'android']}},
         'http_headers': {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     }
     
     if os.path.exists('cookies.txt'):
         ydl_opts['cookiefile'] = 'cookies.txt'
 
-    # فرمت‌های ضدگلوله برای تمام ویدیوها (شورتز و عادی)
+    # فرمت‌های ضدگلوله برای تمام ویدیوها (شورتز و عادی) - با فال‌بک منعطف در برابر مسدودسازی SABR یوتیوب
     if action == "low":
-        ydl_opts['format'] = 'worstvideo+bestaudio/worst'
+        ydl_opts['format'] = 'worst[height>0]/worstvideo+worstaudio/worst'
     elif action == "high":
-        ydl_opts['format'] = 'bestvideo+bestaudio/best'
+        ydl_opts['format'] = 'bestvideo*+bestaudio/best[height>0]/best'
     elif action == "mp3":
         ydl_opts['format'] = 'bestaudio/best'
         ydl_opts['postprocessors'] = [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '192'}]
@@ -262,8 +283,11 @@ def core_downloader(message, url, action, dl_id):
                 else: 
                     bot.send_video(chat_id, f, caption=caption, reply_markup=back_home_markup())
             try:
+
                 bot.delete_message(chat_id, msg_id)
+
             except Exception:
+
                 pass
 
         elif file_size < 200 * 1024 * 1024:
@@ -282,8 +306,11 @@ def core_downloader(message, url, action, dl_id):
     finally:
         for file in glob.glob(f"{dl_id}.*"):
             try:
+
                 os.remove(file)
+
             except Exception:
+
                 pass
 
 if __name__ == '__main__':
