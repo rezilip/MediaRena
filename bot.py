@@ -9,18 +9,18 @@ import re
 import glob
 import requests
 from flask import Flask
-from static_ffmpeg import run
+import static_ffmpeg
 
 # ================= تزریق جادویی FFmpeg به سرور =================
 print("Initializing FFmpeg Engine...")
 try:
-    run.add_paths() # این خط تمام محدودیت‌های سرور رندر را نابود می‌کند!
+    static_ffmpeg.add_paths() # این خط تمام محدودیت‌های سرور رندر را نابود می‌کند!
     print("FFmpeg is fully integrated and ready!")
 except Exception as e:
     print(f"FFmpeg injection failed: {e}")
 
 # ================= تنظیمات اختصاصی ربات =================
-BOT_TOKEN = "8659065494:AAHVONa1FGNvnt8VlrINakgpUI5qw-vCYeI"
+BOT_TOKEN = "HERE_BOT_TOKEN"
 ADMIN_ID = 8516792883
 CHANNEL_ID = "@MediaRena"
 DEV_USERNAME = "irezafattahi"
@@ -113,11 +113,8 @@ def callback_query(call):
         if check_join(chat_id):
             bot.answer_callback_query(call.id, "🎉 عضویت تایید شد!", show_alert=True)
             try:
-
                 bot.delete_message(chat_id, call.message.message_id)
-
             except Exception:
-
                 pass
             bot.send_message(chat_id, "🏠 **منوی اصلی:**", reply_markup=main_menu_keyboard(), parse_mode="Markdown")
         else:
@@ -126,33 +123,24 @@ def callback_query(call):
     elif call.data == "download_section":
         bot.answer_callback_query(call.id)
         try:
-
             bot.delete_message(chat_id, call.message.message_id)
-
         except Exception:
-
             pass
         bot.send_message(chat_id, "📥 **لینک ویدیو را بفرستید.**", reply_markup=back_home_markup(), parse_mode="Markdown")
         
     elif call.data == "help":
         bot.answer_callback_query(call.id)
         try:
-
             bot.delete_message(chat_id, call.message.message_id)
-
         except Exception:
-
             pass
         bot.send_message(chat_id, f"📖 **راهنما:**\nپشتیبانی از یوتیوب، اینستاگرام، تیک‌تاک و X.", reply_markup=back_home_markup(), parse_mode="Markdown")
         
     elif call.data == "support":
         bot.answer_callback_query(call.id)
         try:
-
             bot.delete_message(chat_id, call.message.message_id)
-
         except Exception:
-
             pass
         msg = bot.send_message(chat_id, "📞 پیام خود را بنویسید:", reply_markup=back_home_markup())
         bot.register_next_step_handler(msg, process_support_message)
@@ -160,32 +148,23 @@ def callback_query(call):
     elif call.data == "donate":
         bot.answer_callback_query(call.id)
         try:
-
             bot.delete_message(chat_id, call.message.message_id)
-
         except Exception:
-
             pass
         bot.send_message(chat_id, f"☕️ **حمایت مالی:**\n💳 `{DONATE_CARD}`", reply_markup=back_home_markup(), parse_mode="Markdown")
         
     elif call.data == "back_home":
         bot.answer_callback_query(call.id)
         try:
-
             bot.delete_message(chat_id, call.message.message_id)
-
         except Exception:
-
             pass
         bot.send_message(chat_id, "🏠 **منوی اصلی:**", reply_markup=main_menu_keyboard(), parse_mode="Markdown")
         
     elif call.data == "cancel":
         try:
-
             bot.delete_message(chat_id, call.message.message_id)
-
         except Exception:
-
             pass
             
     elif call.data.startswith("dl_"):
@@ -283,11 +262,8 @@ def core_downloader(message, url, action, dl_id):
                 else: 
                     bot.send_video(chat_id, f, caption=caption, reply_markup=back_home_markup())
             try:
-
                 bot.delete_message(chat_id, msg_id)
-
             except Exception:
-
                 pass
 
         elif file_size < 200 * 1024 * 1024:
@@ -306,11 +282,8 @@ def core_downloader(message, url, action, dl_id):
     finally:
         for file in glob.glob(f"{dl_id}.*"):
             try:
-
                 os.remove(file)
-
             except Exception:
-
                 pass
 
 if __name__ == '__main__':
