@@ -20,7 +20,7 @@ except Exception as e:
     print(f"FFmpeg injection failed: {e}")
 
 # ================= تنظیمات اختصاصی ربات =================
-BOT_TOKEN = "8659065494:AAHcPGBd-zh4Pb1rUmZ4Eer5kiYFJW5X_G4"
+BOT_TOKEN = "8659065494:AAHVONa1FGNvnt8VlrINakgpUI5qw-vCYeI"
 ADMIN_ID = 8516792883
 CHANNEL_ID = "@MediaRena"
 DEV_USERNAME = "irezafattahi"
@@ -112,39 +112,81 @@ def callback_query(call):
     if call.data == "verify_join":
         if check_join(chat_id):
             bot.answer_callback_query(call.id, "🎉 عضویت تایید شد!", show_alert=True)
-            try: bot.delete_message(chat_id, call.message.message_id); except Exception: pass
+            try:
+
+                bot.delete_message(chat_id, call.message.message_id)
+
+            except Exception:
+
+                pass
             bot.send_message(chat_id, "🏠 **منوی اصلی:**", reply_markup=main_menu_keyboard(), parse_mode="Markdown")
         else:
             bot.answer_callback_query(call.id, "❌ هنوز عضو نشده‌اید!", show_alert=True)
             
     elif call.data == "download_section":
         bot.answer_callback_query(call.id)
-        try: bot.delete_message(chat_id, call.message.message_id); except Exception: pass
+        try:
+
+            bot.delete_message(chat_id, call.message.message_id)
+
+        except Exception:
+
+            pass
         bot.send_message(chat_id, "📥 **لینک ویدیو را بفرستید.**", reply_markup=back_home_markup(), parse_mode="Markdown")
         
     elif call.data == "help":
         bot.answer_callback_query(call.id)
-        try: bot.delete_message(chat_id, call.message.message_id); except Exception: pass
+        try:
+
+            bot.delete_message(chat_id, call.message.message_id)
+
+        except Exception:
+
+            pass
         bot.send_message(chat_id, f"📖 **راهنما:**\nپشتیبانی از یوتیوب، اینستاگرام، تیک‌تاک و X.", reply_markup=back_home_markup(), parse_mode="Markdown")
         
     elif call.data == "support":
         bot.answer_callback_query(call.id)
-        try: bot.delete_message(chat_id, call.message.message_id); except Exception: pass
+        try:
+
+            bot.delete_message(chat_id, call.message.message_id)
+
+        except Exception:
+
+            pass
         msg = bot.send_message(chat_id, "📞 پیام خود را بنویسید:", reply_markup=back_home_markup())
         bot.register_next_step_handler(msg, process_support_message)
         
     elif call.data == "donate":
         bot.answer_callback_query(call.id)
-        try: bot.delete_message(chat_id, call.message.message_id); except Exception: pass
+        try:
+
+            bot.delete_message(chat_id, call.message.message_id)
+
+        except Exception:
+
+            pass
         bot.send_message(chat_id, f"☕️ **حمایت مالی:**\n💳 `{DONATE_CARD}`", reply_markup=back_home_markup(), parse_mode="Markdown")
         
     elif call.data == "back_home":
         bot.answer_callback_query(call.id)
-        try: bot.delete_message(chat_id, call.message.message_id); except Exception: pass
+        try:
+
+            bot.delete_message(chat_id, call.message.message_id)
+
+        except Exception:
+
+            pass
         bot.send_message(chat_id, "🏠 **منوی اصلی:**", reply_markup=main_menu_keyboard(), parse_mode="Markdown")
         
     elif call.data == "cancel":
-        try: bot.delete_message(chat_id, call.message.message_id); except Exception: pass
+        try:
+
+            bot.delete_message(chat_id, call.message.message_id)
+
+        except Exception:
+
+            pass
             
     elif call.data.startswith("dl_"):
         parts = call.data.split("_")
@@ -237,16 +279,22 @@ def core_downloader(message, url, action, dl_id):
             with open(target_file, 'rb') as f:
                 caption = f"📌 {title}\n\n🤖 @{BOT_USERNAME}"
                 if action == "mp3": 
-                    bot.send_audio(chat_id, f, caption=caption, reply_markup=back_home_markup(chat_id))
+                    bot.send_audio(chat_id, f, caption=caption, reply_markup=back_home_markup())
                 else: 
-                    bot.send_video(chat_id, f, caption=caption, reply_markup=back_home_markup(chat_id))
-            try: bot.delete_message(chat_id, msg_id); except Exception: pass
+                    bot.send_video(chat_id, f, caption=caption, reply_markup=back_home_markup())
+            try:
+
+                bot.delete_message(chat_id, msg_id)
+
+            except Exception:
+
+                pass
 
         elif file_size < 200 * 1024 * 1024:
             bot.edit_message_text("🚀 در حال آپلود در سرور ابری پرسرعت...", chat_id, msg_id, parse_mode="Markdown")
             cloud_url = upload_to_cloud(target_file)
             if cloud_url:
-                bot.edit_message_text(f"📌 **{title}**\n📥 **[لینک دانلود مستقیم]({cloud_url})**", chat_id, msg_id, parse_mode="Markdown", reply_markup=back_home_markup(chat_id))
+                bot.edit_message_text(f"📌 **{title}**\n📥 **[لینک دانلود مستقیم]({cloud_url})**", chat_id, msg_id, parse_mode="Markdown", reply_markup=back_home_markup())
             else:
                 bot.edit_message_text("❌ خطا در اتصال ابری.", chat_id, msg_id, parse_mode="Markdown")
         else:
@@ -257,7 +305,13 @@ def core_downloader(message, url, action, dl_id):
         bot.edit_message_text(f"❌ **خطا:**\n`{error_msg}...`", chat_id, msg_id, parse_mode="Markdown")
     finally:
         for file in glob.glob(f"{dl_id}.*"):
-            try: os.remove(file); except Exception: pass
+            try:
+
+                os.remove(file)
+
+            except Exception:
+
+                pass
 
 if __name__ == '__main__':
     bot.infinity_polling()
