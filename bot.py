@@ -20,7 +20,7 @@ except Exception as e:
     print(f"FFmpeg injection failed: {e}")
 
 # ================= تنظیمات اختصاصی ربات =================
-BOT_TOKEN = "HERE_BOT_TOKEN"
+BOT_TOKEN = "8659065494:AAGdGDkmcOPuwAwDiRZIGVUgHYww5FtEzAM"
 ADMIN_ID = 8516792883
 CHANNEL_ID = "@MediaRena"
 DEV_USERNAME = "irezafattahi"
